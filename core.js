@@ -1,3 +1,31 @@
+export const DOCUMENT_TYPES = ['ГУ-25', 'ГУ-2Б', 'ГУ-2В', 'ГУ-46', 'ГУ-45', 'ЖД накладная'];
+
+export function createEmptyState() {
+  return { documents: [], wagons: [], pending: null };
+}
+
+export function calculateStatistics(documents, wagons) {
+  const complete = wagons.filter(wagon => DOCUMENT_TYPES.every(type =>
+    documents.some(document => wagon.documentIds.includes(document.id) && document.type === type)
+  )).length;
+  return {
+    wagons: wagons.length,
+    documents: documents.length,
+    inWork: wagons.filter(wagon => !DOCUMENT_TYPES.every(type =>
+      documents.some(document => wagon.documentIds.includes(document.id) && document.type === type)
+    )).length,
+    archived: documents.length,
+    usedBytes: documents.reduce((total, document) => total + (Number(document.fileSize) || 0), 0),
+    complete,
+    review: documents.filter(document => document.needsReview).length,
+  };
+}
+
+export function isLegacyDemoRecord(record) {
+  if (!record || typeof record !== 'object') return false;
+  const id = String(record.id || '').toLowerCase();
+  return record.isDemo === true || record.source === 'demo' || /^(demo|mock|sample)[-_:]/.test(id);
+}
 export const DOCUMENT_TYPES = ['ГУ-2Б', 'ГУ-2В', 'ГУ-46', 'ГУ-45', 'ЖД накладная'];
 
 export function isValidWagonNumber(value) {
@@ -18,6 +46,8 @@ export function extractFields(text, filename = '') {
   const clean = text.replace(/\s+/g, ' ').trim();
   const upper = clean.toUpperCase();
   let type = '';
+  if (/ГУ[\s–—-]*25/.test(upper)) type = 'ГУ-25';
+  else if (/ГУ[\s–—-]*2[\s–—-]*Б/.test(upper)) type = 'ГУ-2Б';
   if (/ГУ[\s–—-]*2[\s–—-]*Б/.test(upper)) type = 'ГУ-2Б';
   else if (/ГУ[\s–—-]*2[\s–—-]*В/.test(upper)) type = 'ГУ-2В';
   else if (/ГУ[\s–—-]*46/.test(upper)) type = 'ГУ-46';
