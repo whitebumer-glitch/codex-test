@@ -1,8 +1,7 @@
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
 import { DOCUMENT_TYPES, calculateStatistics, createEmptyState, extractFields, isLegacyDemoRecord, isValidWagonNumber, mergeIntoWagons } from './core.js';
 
-const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
-const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
-let pdfjsPromise;
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
 const DB_NAME = 'vagondoc';
 const DB_VERSION = 2;
 const state = createEmptyState();

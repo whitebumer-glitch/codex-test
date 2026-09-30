@@ -26,6 +26,7 @@ export function isLegacyDemoRecord(record) {
   const id = String(record.id || '').toLowerCase();
   return record.isDemo === true || record.source === 'demo' || /^(demo|mock|sample)[-_:]/.test(id);
 }
+export const DOCUMENT_TYPES = ['ГУ-2Б', 'ГУ-2В', 'ГУ-46', 'ГУ-45', 'ЖД накладная'];
 
 export function isValidWagonNumber(value) {
   if (!/^\d{8}$/.test(value)) return false;
