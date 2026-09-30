@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ВагонДок — учёт вагонов и документов</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#"><span>В</span>ВагонДок</a>
+    <nav><a class="active" href="#dashboard">▦ <span>Обзор</span></a><a href="#registry">▱ <span>Вагоны</span></a><a href="#documents">▤ <span>Документы</span></a></nav>
+    <div class="privacy">⌂ <div><b>Локальное хранение</b><small>Данные остаются в этом браузере</small></div></div>
+  </aside>
+  <main>
+    <header><div><p>Локальный архив документов</p><h1>Учёт железнодорожных вагонов</h1></div><button class="primary" id="uploadButton">＋ Загрузить PDF</button></header>
+    <section class="stats" id="dashboard">
+      <article><span>▤</span><div><small>Всего документов</small><strong id="statDocuments">0</strong></div></article>
+      <article><span>▱</span><div><small>Всего вагонов</small><strong id="statWagons">0</strong></div></article>
+      <article><span>↻</span><div><small>В работе</small><strong id="statInWork">0</strong></div></article>
+      <article><span>□</span><div><small>Архив</small><strong id="statArchive">0</strong></div></article>
+      <article><span>◫</span><div><small>Используемое место</small><strong id="statStorage">0 Б</strong></div></article>
+    </section>
+    <section class="panel" id="registry">
+      <div class="panel-head"><div><h2>Комплектность документов</h2><p>Документы сгруппированы по месяцу отправления</p></div><button class="secondary" id="exportButton">⇩ Экспорт реестра</button></div>
+      <div class="filters">
+        <label>Поиск<input id="searchFilter" placeholder="Номер вагона" inputmode="numeric"></label>
+        <label>Год<select id="yearFilter"><option value="">Все годы</option></select></label>
+        <label>Месяц<select id="monthFilter"><option value="">Все месяцы</option></select></label>
+        <label>Тип документа<select id="typeFilter"><option value="">Любой</option><option>ГУ-25</option><option>ГУ-2Б</option><option>ГУ-2В</option><option>ГУ-46</option><option>ГУ-45</option><option>ЖД накладная</option></select></label>
+        <label>Комплектность<select id="presenceFilter"><option value="">Любая</option><option value="complete">Полный комплект</option><option value="incomplete">Есть пропуски</option></select></label>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>№ вагона</th><th>Месяц отправления</th><th>Год</th><th>ГУ-25</th><th>ГУ-2Б</th><th>ГУ-2В</th><th>ГУ-46</th><th>ГУ-45</th><th>ЖД накладная</th><th></th></tr></thead><tbody id="wagonRows"></tbody></table></div>
+      <div class="empty" id="emptyState"><span>▱</span><h3>Нет данных для отображения</h3><p>Загрузите первый PDF. Система извлечёт текст и предложит проверить данные перед сохранением.</p><button class="primary">Загрузить PDF</button></div>
+    </section>
+    <section class="panel documents" id="documents"><div class="panel-head"><div><h2>Последние документы</h2><p>Исходные PDF хранятся локально в IndexedDB</p></div></div><div class="upload-drop-zone" id="uploadDropZone" role="button" tabindex="0" aria-label="Выбрать или перетащить PDF"><b>Перетащите PDF сюда</b><span>или нажмите, чтобы выбрать файлы</span><small>Можно выбрать несколько PDF</small></div><div id="documentList" class="document-list"></div></section>
+    <p class="storage-note">Важно: архив доступен только в этом браузере и на этом устройстве. Очистка данных сайта удалит документы. Для общего доступа потребуется серверное хранилище.</p>
+  </main>
+
+  <input id="fileInput" type="file" accept="application/pdf,.pdf" multiple hidden>
+  <dialog id="progressDialog"><div class="spinner"></div><h2>Обработка документа</h2><p id="progressFile"></p><ol class="steps"><li>Извлечение текста</li><li>Распознавание</li><li>Проверка</li><li>Готово</li></ol><p class="progress-message" id="progressMessage"></p></dialog>
+  <dialog id="reviewDialog" class="review-dialog">
+    <form method="dialog"><button class="close" value="cancel" aria-label="Закрыть">×</button></form>
+    <span class="badge warn">Требуется подтверждение</span><h2>Проверка распознавания</h2><p class="filename" id="reviewFilename"></p>
+    <div id="recognitionWarning" class="warning"></div>
+    <form id="reviewForm">
+      <div class="form-grid"><label>Тип документа<select id="documentType"><option value="">Не распознано</option><option>ГУ-25</option><option>ГУ-2Б</option><option>ГУ-2В</option><option>ГУ-45</option><option>ГУ-46</option><option>ЖД накладная</option><option>Другой</option></select></label><label>Номер накладной<input id="invoiceNumber" placeholder="Не распознано"></label></div>
+      <label>Номера вагонов <small>ровно 8 цифр, по одному в строке</small><textarea id="wagonNumbers" placeholder="Не распознано"></textarea></label><div id="wagonValidation"></div>
+      <div class="form-grid"><label>Дата документа<input id="documentDate" type="date"></label><label>Дата прибытия / подачи / уборки<input id="operationDate" type="date"></label><label>Станция отправления<input id="originStation" placeholder="Не распознано"></label><label>Станция назначения<input id="destinationStation" placeholder="Не распознано"></label></div>
+      <label>Другие сведения<textarea id="extraDetails" placeholder="Только сведения из документа"></textarea></label>
+      <details><summary>Извлечённый текст</summary><pre id="rawText"></pre></details>
+      <div class="confidence"><span>Уверенность распознавания</span><b id="confidenceValue">—</b></div>
+      <footer><button type="button" class="danger" id="discardButton">Не сохранять</button><button class="primary" type="submit">Подтвердить и сохранить</button></footer>
+    </form>
+  </dialog>
+  <dialog id="wagonDialog" class="wagon-dialog"><form method="dialog"><button class="close" value="cancel">×</button></form><div id="wagonDetails"></div></dialog>
+  <div class="toast" id="toast"></div>
+  <script type="module" src="app.js?v=4"></script>
+</body></html>
