@@ -32,6 +32,7 @@ test('данные появляются только после обработк
   assert.equal(state.wagons[0].number, '24547705');
   assert.equal(document.type, 'ГУ-25');
 });
+import { extractFields, extractWagonNumbers, isValidWagonNumber, mergeIntoWagons } from '../core.js';
 
 test('пустой текст не создаёт вымышленные данные', () => {
   assert.deepEqual(extractFields('', 'scan.pdf').wagonNumbers, []);

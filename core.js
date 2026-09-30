@@ -26,6 +26,7 @@ export function isLegacyDemoRecord(record) {
   const id = String(record.id || '').toLowerCase();
   return record.isDemo === true || record.source === 'demo' || /^(demo|mock|sample)[-_:]/.test(id);
 }
+export const DOCUMENT_TYPES = ['ГУ-2Б', 'ГУ-2В', 'ГУ-46', 'ГУ-45', 'ЖД накладная'];
 
 export function isValidWagonNumber(value) {
   if (!/^\d{8}$/.test(value)) return false;
@@ -47,6 +48,7 @@ export function extractFields(text, filename = '') {
   let type = '';
   if (/ГУ[\s–—-]*25/.test(upper)) type = 'ГУ-25';
   else if (/ГУ[\s–—-]*2[\s–—-]*Б/.test(upper)) type = 'ГУ-2Б';
+  if (/ГУ[\s–—-]*2[\s–—-]*Б/.test(upper)) type = 'ГУ-2Б';
   else if (/ГУ[\s–—-]*2[\s–—-]*В/.test(upper)) type = 'ГУ-2В';
   else if (/ГУ[\s–—-]*46/.test(upper)) type = 'ГУ-46';
   else if (/ГУ[\s–—-]*45/.test(upper)) type = 'ГУ-45';
