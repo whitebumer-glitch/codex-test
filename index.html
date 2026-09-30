@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ВагонДок — архив железнодорожных документов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="#"><span class="brand-mark">В</span><span>ВагонДок</span></a>
+      <nav>
+        <a class="nav-item active" href="#"><span>▦</span>Обзор</a>
+        <a class="nav-item" href="#documents"><span>▤</span>Документы <b id="navCount">24</b></a>
+        <a class="nav-item" href="#wagons"><span>▱</span>Вагоны</a>
+        <a class="nav-item" href="#archive"><span>□</span>Архив</a>
+      </nav>
+      <div class="sidebar-footer">
+        <a class="nav-item" href="#"><span>?</span>Помощь</a>
+        <div class="user"><div class="avatar">АК</div><div><strong>Алексей Ковалёв</strong><small>Логист</small></div><button>⋮</button></div>
+      </div>
+    </aside>
+
+    <main>
+      <header>
+        <button class="mobile-menu" aria-label="Открыть меню">☰</button>
+        <div><p class="eyebrow">30 сентября, среда</p><h1>Добрый день, Алексей</h1></div>
+        <button class="primary" id="openUpload"><span>＋</span> Загрузить документы</button>
+      </header>
+
+      <section class="stats" aria-label="Статистика">
+        <article><div class="stat-icon blue">▤</div><div><span>Документов за месяц</span><strong id="documentTotal">1 248</strong><small class="up">↗ 12% <i>к августу</i></small></div></article>
+        <article><div class="stat-icon green">✓</div><div><span>Распознано</span><strong>98,7%</strong><small><i>1 232 документа</i></small></div></article>
+        <article><div class="stat-icon orange">▱</div><div><span>Вагонов в работе</span><strong id="wagonTotal">86</strong><small><i>на 4 станциях</i></small></div></article>
+        <article><div class="stat-icon purple">□</div><div><span>Архив</span><strong>32,4 ГБ</strong><small><i>за 2026 год</i></small></div></article>
+      </section>
+
+      <section class="workspace">
+        <article class="panel activity" id="documents">
+          <div class="panel-head"><div><h2>Последние документы</h2><p>Распознанные и добавленные в архив</p></div><button class="link-button">Все документы →</button></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Документ</th><th>Вагон</th><th>Станция</th><th>Добавлен</th><th>Статус</th><th></th></tr></thead>
+            <tbody id="documentRows"></tbody>
+          </table></div>
+        </article>
+
+        <aside class="panel upload-card">
+          <div class="panel-head"><div><h2>Быстрая загрузка</h2><p>PDF до 25 МБ</p></div></div>
+          <label class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple />
+            <span class="upload-icon">⇧</span>
+            <strong>Перетащите PDF сюда</strong>
+            <span>или <u>выберите на компьютере</u></span>
+          </label>
+          <div class="formats"><span>Распознаём</span><div><b>ГУ-2Б</b><b>ГУ-2В</b><b>ГУ-45</b><b>ГУ-46</b></div></div>
+          <div class="secure">◇ <span><strong>Данные защищены</strong><small>Файлы хранятся в зашифрованном виде</small></span></div>
+        </aside>
+      </section>
+
+      <section class="panel archive" id="archive">
+        <div class="panel-head"><div><h2>Комплектность документов</h2><p>По вагонам текущей поставки · Кузбасс — ТЭЦ-4</p></div><div class="archive-actions"><span class="legend"><i></i> Есть документ</span><button class="outline" id="downloadArchive">⇩ Скачать реестр</button></div></div>
+        <div class="table-wrap"><table class="completeness"><thead><tr><th>№ вагона</th><th>ГУ-2Б</th><th>ГУ-2В</th><th>ГУ-45</th><th>ГУ-46</th><th>Комплект</th></tr></thead><tbody id="wagonRows"></tbody></table></div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"><span>✓</span><div><strong>Документы обработаны</strong><small id="toastText"></small></div></div>
+
+    <dialog id="uploadDialog">
+      <button class="close" aria-label="Закрыть">×</button>
+      <span class="dialog-icon">⇧</span><h2>Загрузить документы</h2><p>Добавьте документы — номера вагонов и типы форм будут определены автоматически.</p>
+      <label class="dialog-drop"><input type="file" id="dialogInput" accept="application/pdf,.pdf" multiple><strong>Выберите PDF-файлы</strong><span>или перетащите их в это окно</span></label>
+      <small>ГУ-2Б · ГУ-2В · ГУ-45 · ГУ-46</small>
+    </dialog>
+    <script src="app.js"></script>
+  </body>
+</html>
