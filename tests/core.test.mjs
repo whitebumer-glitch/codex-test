@@ -15,6 +15,19 @@ test('новое приложение запускается с пустой б�
   }
 });
 
+test('страница содержит один рабочий интерфейс и корректную загрузку PDF', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const app = await readFile(new URL('../app.js', import.meta.url), 'utf8');
+  assert.equal((html.match(/<main\b/g) || []).length, 1);
+  assert.doesNotMatch(html, /Добрый день|Алексей|1 248|1 232|98,7|32,4 ГБ/);
+  assert.match(html, /id="fileInput"[^>]+accept="application\/pdf,\.pdf"[^>]+multiple/);
+  assert.match(html, /id="uploadDropZone"/);
+  assert.match(app, /fileInput'\)\.addEventListener\('change'/);
+  assert.match(app, /uploadDropZone'\)\.addEventListener\('drop'/);
+  assert.match(app, /for \(const file of files\) await processFile\(file\)/);
+  assert.doesNotMatch(app, /^import .*pdf\.min\.mjs/m);
+});
+
 test('миграция отличает встроенные записи от пользовательских документов', () => {
   assert.equal(isLegacyDemoRecord({ id: 'demo:legacy', isDemo: true }), true);
   assert.equal(isLegacyDemoRecord({ id: 'mock-old' }), true);

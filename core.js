@@ -48,7 +48,6 @@ export function extractFields(text, filename = '') {
   let type = '';
   if (/ГУ[\s–—-]*25/.test(upper)) type = 'ГУ-25';
   else if (/ГУ[\s–—-]*2[\s–—-]*Б/.test(upper)) type = 'ГУ-2Б';
-  if (/ГУ[\s–—-]*2[\s–—-]*Б/.test(upper)) type = 'ГУ-2Б';
   else if (/ГУ[\s–—-]*2[\s–—-]*В/.test(upper)) type = 'ГУ-2В';
   else if (/ГУ[\s–—-]*46/.test(upper)) type = 'ГУ-46';
   else if (/ГУ[\s–—-]*45/.test(upper)) type = 'ГУ-45';
