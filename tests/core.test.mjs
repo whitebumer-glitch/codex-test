@@ -1,31 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import { calculateStatistics, createEmptyState, extractFields, extractWagonNumbers, isValidWagonNumber, mergeIntoWagons } from '../core.js';
-
-test('новое приложение запускается с пустой базой и нулевой статистикой', async () => {
-  const state = createEmptyState();
-  assert.deepEqual(state.documents, []);
-  assert.deepEqual(state.wagons, []);
-  assert.deepEqual(calculateStatistics(state.documents, state.wagons), { wagons: 0, documents: 0, complete: 0, review: 0 });
-
-  const sources = await Promise.all(['../index.html', '../app.js', '../core.js'].map(path => readFile(new URL(path, import.meta.url), 'utf8')));
-  for (const source of sources) {
-    assert.doesNotMatch(source, /initialDocuments|1 248|98,7%|32,4 ГБ|55674218|62418307/);
-  }
-});
-
-test('данные появляются только после обработки извлечённого текста документа', () => {
-  const state = createEmptyState();
-  const fields = extractFields('Форма ГУ-25 вагон 24547705 дата 03.09.2026 станция отправления Омск станция назначения Томск груз уголь');
-  const document = { id: 'pdf-1', ...fields, needsReview: false };
-  state.documents.push(document);
-  mergeIntoWagons(state.wagons, document);
-  assert.equal(state.documents.length, 1);
-  assert.equal(state.wagons.length, 1);
-  assert.equal(state.wagons[0].number, '24547705');
-  assert.equal(document.type, 'ГУ-25');
-});
+import { extractFields, extractWagonNumbers, isValidWagonNumber, mergeIntoWagons } from '../core.js';
 
 test('пустой текст не создаёт вымышленные данные', () => {
   assert.deepEqual(extractFields('', 'scan.pdf').wagonNumbers, []);

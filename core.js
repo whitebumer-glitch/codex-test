@@ -1,20 +1,4 @@
-export const DOCUMENT_TYPES = ['ГУ-25', 'ГУ-2Б', 'ГУ-2В', 'ГУ-46', 'ГУ-45', 'ЖД накладная'];
-
-export function createEmptyState() {
-  return { documents: [], wagons: [], pending: null };
-}
-
-export function calculateStatistics(documents, wagons) {
-  const complete = wagons.filter(wagon => DOCUMENT_TYPES.every(type =>
-    documents.some(document => wagon.documentIds.includes(document.id) && document.type === type)
-  )).length;
-  return {
-    wagons: wagons.length,
-    documents: documents.length,
-    complete,
-    review: documents.filter(document => document.needsReview).length,
-  };
-}
+export const DOCUMENT_TYPES = ['ГУ-2Б', 'ГУ-2В', 'ГУ-46', 'ГУ-45', 'ЖД накладная'];
 
 export function isValidWagonNumber(value) {
   if (!/^\d{8}$/.test(value)) return false;
@@ -34,8 +18,7 @@ export function extractFields(text, filename = '') {
   const clean = text.replace(/\s+/g, ' ').trim();
   const upper = clean.toUpperCase();
   let type = '';
-  if (/ГУ[\s–—-]*25/.test(upper)) type = 'ГУ-25';
-  else if (/ГУ[\s–—-]*2[\s–—-]*Б/.test(upper)) type = 'ГУ-2Б';
+  if (/ГУ[\s–—-]*2[\s–—-]*Б/.test(upper)) type = 'ГУ-2Б';
   else if (/ГУ[\s–—-]*2[\s–—-]*В/.test(upper)) type = 'ГУ-2В';
   else if (/ГУ[\s–—-]*46/.test(upper)) type = 'ГУ-46';
   else if (/ГУ[\s–—-]*45/.test(upper)) type = 'ГУ-45';
