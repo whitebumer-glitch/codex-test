@@ -20,11 +20,18 @@ test('страница содержит один рабочий интерфей
   const app = await readFile(new URL('../app.js', import.meta.url), 'utf8');
   assert.equal((html.match(/<main\b/g) || []).length, 1);
   assert.doesNotMatch(html, /Добрый день|Алексей|1 248|1 232|98,7|32,4 ГБ/);
+  assert.equal((html.match(/id="fileInput"/g) || []).length, 1);
+  assert.equal((html.match(/id="uploadButton"/g) || []).length, 1);
+  assert.equal((html.match(/id="uploadDropZone"/g) || []).length, 1);
   assert.match(html, /id="fileInput"[^>]+accept="application\/pdf,\.pdf"[^>]+multiple/);
-  assert.match(html, /id="uploadDropZone"/);
-  assert.match(app, /fileInput'\)\.addEventListener\('change'/);
-  assert.match(app, /uploadDropZone'\)\.addEventListener\('drop'/);
-  assert.match(app, /for \(const file of files\) await processFile\(file\)/);
+  assert.match(app, /uploadButton\.addEventListener\('click', openFilePicker\)/);
+  assert.match(app, /fileInput\.addEventListener\('change',[\s\S]*handleFiles\(event\.target\.files\)/);
+  assert.match(app, /dropZone\.addEventListener\('drop', event => handleFiles\(event\.dataTransfer\.files\)\)/);
+  assert.match(app, /dropZone\.addEventListener\(eventName, event => \{ event\.preventDefault\(\); event\.stopPropagation\(\)/);
+  assert.match(app, /document\.addEventListener\('dragover', event => event\.preventDefault\(\)\)/);
+  assert.match(app, /document\.addEventListener\('drop', event => event\.preventDefault\(\)\)/);
+  assert.match(app, /for \(const file of pdfFiles\) await processFile\(file\)/);
+  assert.match(app, /document\.addEventListener\('DOMContentLoaded', initializeApp/);
   assert.doesNotMatch(app, /^import .*pdf\.min\.mjs/m);
 });
 
@@ -45,7 +52,6 @@ test('данные появляются только после обработк
   assert.equal(state.wagons[0].number, '24547705');
   assert.equal(document.type, 'ГУ-25');
 });
-import { extractFields, extractWagonNumbers, isValidWagonNumber, mergeIntoWagons } from '../core.js';
 
 test('пустой текст не создаёт вымышленные данные', () => {
   assert.deepEqual(extractFields('', 'scan.pdf').wagonNumbers, []);

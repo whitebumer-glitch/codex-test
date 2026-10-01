@@ -1,7 +1,9 @@
-import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
 import { DOCUMENT_TYPES, calculateStatistics, createEmptyState, extractFields, isLegacyDemoRecord, isValidWagonNumber, mergeIntoWagons } from './core.js';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
+const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+let pdfjsPromise;
+let reviewCompletion;
 const DB_NAME = 'vagondoc';
 const DB_VERSION = 2;
 const state = createEmptyState();
@@ -120,6 +122,7 @@ async function processFile(file) {
     state.pending = { file, fields, fingerprint };
     $('#progressDialog').close();
     showReview();
+    await waitForReview();
   } catch (error) {
     $('#progressDialog').close();
     console.error(error);
@@ -127,8 +130,12 @@ async function processFile(file) {
     showReview();
     $('#recognitionWarning').textContent = 'Не удалось автоматически прочитать PDF. Файл не потерян: заполните известные поля вручную и подтвердите сохранение.';
     notify(`Не удалось распознать ${file.name} — доступен ручной ввод`);
+    await waitForReview();
   }
 }
+
+function waitForReview() { return new Promise(resolve => { reviewCompletion = resolve; }); }
+function completeReview() { const resolve = reviewCompletion; reviewCompletion = null; resolve?.(); }
 
 function setProgress(index, message) {
   [...document.querySelectorAll('.steps li')].forEach((item, i) => { item.className = i < index ? 'done' : i === index ? 'active' : ''; });
@@ -167,7 +174,7 @@ async function savePending(event) {
   const document = { id: crypto.randomUUID(), fingerprint: state.pending.fingerprint, filename: state.pending.file.name, fileSize: state.pending.file.size, type: $('#documentType').value, wagonNumbers: validation.values, invoice: $('#invoiceNumber').value.trim(), date: $('#documentDate').value, operationDate: $('#operationDate').value, origin: $('#originStation').value.trim(), destination: $('#destinationStation').value.trim(), extra: $('#extraDetails').value.trim(), confidence: state.pending.fields.confidence, needsReview: validation.needsReview || !$('#documentType').value || !state.pending.fields.rawText, savedAt: new Date().toISOString() };
   await dbRequest('documents', 'readwrite', store => store.put(document));
   await dbRequest('files', 'readwrite', store => store.put({ id: document.id, blob: state.pending.file }));
-  state.documents.push(document); rebuildWagons(); state.pending = null; $('#reviewDialog').close(); render(); notify('Документ сохранён локально');
+  state.documents.push(document); rebuildWagons(); state.pending = null; $('#reviewDialog').close(); render(); notify('Документ сохранён локально'); completeReview();
 }
 
 function docsFor(wagon) { return state.documents.filter(doc => wagon.documentIds.includes(doc.id)); }
@@ -208,21 +215,38 @@ function openFilePicker() { $('#fileInput').click(); }
 async function handleFiles(fileList) {
   const files = [...fileList];
   if (!files.length) return;
-  for (const file of files) await processFile(file);
+  const pdfFiles = files.filter(file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
+  const rejected = files.length - pdfFiles.length;
+  if (rejected) notify(`${rejected} ${rejected === 1 ? 'файл пропущен' : 'файла пропущено'}: поддерживается только PDF`);
+  for (const file of pdfFiles) await processFile(file);
 }
 
-$('#uploadButton').addEventListener('click', openFilePicker);
-$('#emptyState button').addEventListener('click', openFilePicker);
-$('#uploadDropZone').addEventListener('click', openFilePicker);
-$('#uploadDropZone').addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openFilePicker(); } });
-$('#fileInput').addEventListener('change', async event => { await handleFiles(event.target.files); event.target.value = ''; });
-for (const eventName of ['dragenter', 'dragover']) $('#uploadDropZone').addEventListener(eventName, event => { event.preventDefault(); event.stopPropagation(); $('#uploadDropZone').classList.add('dragging'); });
-for (const eventName of ['dragleave', 'drop']) $('#uploadDropZone').addEventListener(eventName, event => { event.preventDefault(); event.stopPropagation(); $('#uploadDropZone').classList.remove('dragging'); });
-$('#uploadDropZone').addEventListener('drop', event => handleFiles(event.dataTransfer.files));
-$('#wagonNumbers').oninput = validateWagons; $('#reviewForm').onsubmit = savePending;
-$('#discardButton').onclick = () => { state.pending=null; $('#reviewDialog').close(); notify('Документ не сохранён'); };
-document.addEventListener('click', event => { const file = event.target.closest('[data-file]'); const wagon = event.target.closest('[data-wagon]'); if(file) openFile(file.dataset.file); if(wagon) showWagon(wagon.dataset.wagon); });
-['#searchFilter','#yearFilter','#monthFilter','#typeFilter','#presenceFilter'].forEach(selector => $(selector).addEventListener('input', render));
-$('#exportButton').onclick = () => { const data = filteredWagons().map(w => ({ wagonNumber:w.number, shipmentDate:w.shipmentDate||'', documents:Object.fromEntries(DOCUMENT_TYPES.map(t=>[t,hasType(w,t)])) })); const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})); const link=document.createElement('a');link.href=url;link.download='reestr-vagonov.json';link.click();URL.revokeObjectURL(url); };
+function initializeApp() {
+  const fileInput = $('#fileInput');
+  const uploadButton = $('#uploadButton');
+  const dropZone = $('#uploadDropZone');
+  if (!fileInput || !uploadButton || !dropZone) throw new Error('Не найдены обязательные элементы загрузки PDF');
 
-loadData().catch(error => { console.error(error); notify('Локальное хранилище недоступно'); });
+  uploadButton.addEventListener('click', openFilePicker);
+  $('#emptyState button').addEventListener('click', openFilePicker);
+  dropZone.addEventListener('click', openFilePicker);
+  dropZone.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openFilePicker(); } });
+  fileInput.addEventListener('change', async event => { await handleFiles(event.target.files); event.target.value = ''; });
+  for (const eventName of ['dragenter', 'dragover']) dropZone.addEventListener(eventName, event => { event.preventDefault(); event.stopPropagation(); dropZone.classList.add('dragging'); });
+  for (const eventName of ['dragleave', 'drop']) dropZone.addEventListener(eventName, event => { event.preventDefault(); event.stopPropagation(); dropZone.classList.remove('dragging'); });
+  dropZone.addEventListener('drop', event => handleFiles(event.dataTransfer.files));
+  document.addEventListener('dragover', event => event.preventDefault());
+  document.addEventListener('drop', event => event.preventDefault());
+
+  $('#wagonNumbers').addEventListener('input', validateWagons);
+  $('#reviewForm').addEventListener('submit', savePending);
+  $('#discardButton').addEventListener('click', () => { state.pending=null; $('#reviewDialog').close(); notify('Документ не сохранён'); completeReview(); });
+  $('#reviewDialog').addEventListener('close', () => { if (state.pending) { state.pending=null; notify('Документ не сохранён'); completeReview(); } });
+  document.addEventListener('click', event => { const file = event.target.closest('[data-file]'); const wagon = event.target.closest('[data-wagon]'); if(file) openFile(file.dataset.file); if(wagon) showWagon(wagon.dataset.wagon); });
+  ['#searchFilter','#yearFilter','#monthFilter','#typeFilter','#presenceFilter'].forEach(selector => $(selector).addEventListener('input', render));
+  $('#exportButton').addEventListener('click', () => { const data = filteredWagons().map(w => ({ wagonNumber:w.number, shipmentDate:w.shipmentDate||'', documents:Object.fromEntries(DOCUMENT_TYPES.map(t=>[t,hasType(w,t)])) })); const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})); const link=document.createElement('a');link.href=url;link.download='reestr-vagonov.json';link.click();URL.revokeObjectURL(url); });
+  loadData().catch(error => { console.error(error); notify('Локальное хранилище недоступно'); });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
+else initializeApp();
